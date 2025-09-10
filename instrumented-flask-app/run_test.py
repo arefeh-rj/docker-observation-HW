@@ -56,7 +56,8 @@ class LoadTester:
                 pass
         print("Add item endpoint completed")
 
-    def test_get_item(self) -> None:
+    def test_get_item(self, miss_ratio: float = 0.3) -> None:
+    # ensure some hit keys exist
         for i in range(1, 6):
             try:
                 payload = {"key": f"load_test_key_{i}", "value": f"load_test_value_{i}"}
@@ -66,10 +67,12 @@ class LoadTester:
 
         while time.time() - self.start_time < self.duration:
             try:
-                key_num = random.randint(1, 5)
-                requests.get(
-                    f"{self.base_url}/items/load_test_key_{key_num}", timeout=5
-                )
+                if random.random() < miss_ratio:
+                    rnd = random.randint(1000, 999999)
+                    requests.get(f"{self.base_url}/items/miss_key_{rnd}", timeout=5)
+                else:
+                    key_num = random.randint(1, 5)
+                    requests.get(f"{self.base_url}/items/load_test_key_{key_num}", timeout=5)
                 time.sleep(0.1)
             except requests.exceptions.RequestException:
                 pass
@@ -87,10 +90,9 @@ class LoadTester:
     def test_cache_miss(self) -> None:
         while time.time() - self.start_time < self.duration:
             try:
-                timestamp = int(time.time())
-                random_key = f"cache_miss_{timestamp}_{random.randint(1000, 9999)}_{random.randint(1000, 9999)}"
-                requests.get(f"{self.base_url}/items/{random_key}", timeout=5)
-                time.sleep(0.5)
+                rnd = random.randint(1, 1_000_000_000)
+                requests.get(f"{self.base_url}/items/__miss__:{rnd}", timeout=5)
+                time.sleep(0.05)  # much faster → more misses
             except requests.exceptions.RequestException:
                 pass
         print("Cache miss endpoint completed")
@@ -110,7 +112,7 @@ class LoadTester:
         test_functions = [
             self.test_hello,
             self.test_add_item,
-            self.test_get_item,
+            lambda: self.test_get_item(miss_ratio=0.5),  # 50% misses
             self.test_list_items,
             self.test_cache_miss,
         ]
