@@ -21,6 +21,14 @@ redis_app_cache_hit = Counter(
     ["key"],
 )
 
+
+redis_app_cache_miss = Counter(
+    "redis_app_cache_miss",
+    "Number of cache misses when getting items from Redis",
+    ["key"],
+)
+
+
 request_count = Counter(
     "http_requests_total",
     "Total number of HTTP requests",
